@@ -8,6 +8,7 @@ import com.thanjoz.jobportal_backend.repository.JobRepository;
 import com.thanjoz.jobportal_backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.thanjoz.jobportal_backend.repository.JobCategoryRepository;
 
 import java.util.List;
 
@@ -23,6 +24,9 @@ public class JobService {
     @Autowired
     private CompanyRepository companyRepository;
 
+    @Autowired
+    private JobCategoryRepository jobCategoryRepository;
+
     public List<Job> getAllJobs() {
         return jobRepository.findAll();
     }
@@ -33,6 +37,12 @@ public class JobService {
     }
 
     public Job createJob(Job job) {
+
+        if (job.getCategoryId() != null) {
+            jobCategoryRepository.findById(job.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Job category not found"));
+        }
+
         return jobRepository.save(job);
     }
 
@@ -53,6 +63,10 @@ public class JobService {
         existingJob.setType(updatedJob.getType());
         existingJob.setExperience(updatedJob.getExperience());
         existingJob.setCompanyId(updatedJob.getCompanyId());
+        if (updatedJob.getCategoryId() != null) {
+            jobCategoryRepository.findById(updatedJob.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Job category not found"));
+        }
         existingJob.setCategoryId(updatedJob.getCategoryId());
 
         return jobRepository.save(existingJob);

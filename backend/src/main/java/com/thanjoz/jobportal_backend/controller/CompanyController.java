@@ -39,4 +39,19 @@ public class CompanyController {
 
         return companyService.getCompaniesByOwner(ownerId);
     }
+    @PutMapping("/{id}")
+    public Company updateCompany(
+            @PathVariable Long id,
+            @RequestBody Company company) {
+
+        return companyService.updateCompany(id, company);
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteCompany(@PathVariable Long id) {
+
+        companyService.deleteCompany(id);
+
+        return "Company deleted successfully";
+    }
 }

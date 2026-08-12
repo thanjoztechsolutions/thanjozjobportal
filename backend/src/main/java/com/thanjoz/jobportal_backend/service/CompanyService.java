@@ -40,4 +40,23 @@ public class CompanyService {
         return companyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Company not found"));
     }
+    public Company updateCompany(Long id, Company updatedCompany) {
+
+        Company existingCompany = companyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        existingCompany.setName(updatedCompany.getName());
+        existingCompany.setDescription(updatedCompany.getDescription());
+        existingCompany.setWebsite(updatedCompany.getWebsite());
+
+        return companyRepository.save(existingCompany);
+    }
+
+    public void deleteCompany(Long id) {
+
+        Company company = companyRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        companyRepository.delete(company);
+    }
 }
