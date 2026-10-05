@@ -1,12 +1,11 @@
-
 package com.thanjoz.jobportal_backend.entity;
 
 public enum ApplicationStatus {
 
     APPLIED,
-    REVIEWING,
+    RESUME_REVIEWED,
     SHORTLISTED,
-    REJECTED,
-    HIRED
+    INTERVIEW_SCHEDULED,
+    SELECTED,
+    REJECTED
 }
-

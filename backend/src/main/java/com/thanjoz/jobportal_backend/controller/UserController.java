@@ -6,6 +6,8 @@ import com.thanjoz.jobportal_backend.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.thanjoz.jobportal_backend.dto.LoginResponse;
+import com.thanjoz.jobportal_backend.dto.RegisterResponse;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/users")
@@ -18,10 +20,10 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(
-            @RequestBody RegisterRequest request) {
+    public ResponseEntity<RegisterResponse> registerUser(
+            @Valid @RequestBody RegisterRequest request) {
 
-        String result = userService.registerUser(request);
+        RegisterResponse result = userService.registerUser(request);
 
         return ResponseEntity.ok(result);
     }

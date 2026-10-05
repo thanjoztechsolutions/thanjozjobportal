@@ -19,4 +19,17 @@ public class ApplicationResponse {
     private String location;
 
     private ApplicationStatus status;
+
+    // Applicant details
+    private String name;
+
+    private String email;
+
+    private String phone;
+
+    private String qualification;
+
+    private String experience;
+
+    private String resume;
 }

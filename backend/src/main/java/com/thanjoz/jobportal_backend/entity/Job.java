@@ -27,7 +27,13 @@ public class Job {
 
     private String experience;
 
-    private Long companyId;
+    private Integer vacancies;
 
-    private Long categoryId;
+    private String requiredSkill;
+
+    // Contractor who posted this job
+    private String contractorId;
+
+    // Job category name
+    private String category;
 }

@@ -1,6 +1,9 @@
 package com.thanjoz.jobportal_backend.dto;
 
 import lombok.Data;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotBlank;
+
 
 @Data
 public class RegisterRequest {
@@ -21,6 +24,11 @@ public class RegisterRequest {
 
     private String email;
 
+    @NotBlank(message = "Phone number is required")
+    @Pattern(
+            regexp = "^[0-9]{10}$",
+            message = "Phone number must contain exactly 10 digits"
+    )
     private String phone;
 
     private String address;

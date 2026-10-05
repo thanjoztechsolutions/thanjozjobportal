@@ -3,10 +3,11 @@ package com.thanjoz.jobportal_backend.service;
 import com.thanjoz.jobportal_backend.dto.LoginRequest;
 import com.thanjoz.jobportal_backend.dto.LoginResponse;
 import com.thanjoz.jobportal_backend.dto.RegisterRequest;
+import com.thanjoz.jobportal_backend.dto.RegisterResponse;
 import com.thanjoz.jobportal_backend.entity.Role;
 import com.thanjoz.jobportal_backend.entity.User;
-import com.thanjoz.jobportal_backend.security.JwtService;
 import com.thanjoz.jobportal_backend.repository.UserRepository;
+import com.thanjoz.jobportal_backend.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,80 +17,168 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final EmailService emailService;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            EmailService emailService) {
 
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
+        this.userRepository =
+                userRepository;
+
+        this.passwordEncoder =
+                passwordEncoder;
+
+        this.jwtService =
+                jwtService;
+
+        this.emailService =
+                emailService;
     }
 
-    public String registerUser(RegisterRequest request) {
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            return "Email already registered";
+    // ============================================================
+    // REGISTER USER
+    // ============================================================
+
+    public RegisterResponse registerUser(RegisterRequest request) {
+
+        // --------------------------------------------------------
+        // NORMALIZE EMAIL
+        // --------------------------------------------------------
+
+        String email = request.getEmail();
+
+        if (email != null) {
+            email = email.trim().toLowerCase();
+            request.setEmail(email);
         }
+
+
+        // --------------------------------------------------------
+        // CHECK DUPLICATE EMAIL
+        // --------------------------------------------------------
+
+        if (userRepository.existsByEmail(email)) {
+
+            return new RegisterResponse(
+                    "Email already registered",
+                    null
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // CHECK DUPLICATE PHONE
+        // --------------------------------------------------------
 
         if (request.getPhone() != null &&
                 !request.getPhone().isBlank() &&
                 userRepository.existsByPhone(request.getPhone())) {
 
-            return "Phone number already registered";
+            return new RegisterResponse(
+                    "Phone number already registered",
+                    null
+            );
         }
 
-        User user = new User();
 
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-
-        user.setPassword(
-                passwordEncoder.encode(request.getPassword())
-        );
+        // ========================================================
+        // APPLICANT REGISTRATION
+        // ========================================================
 
         if ("APPLICANT".equalsIgnoreCase(request.getRole())) {
 
-            user.setRole(Role.APPLICANT);
+            User user = new User();
 
-            user.setFirstName(request.getFirstName());
-            user.setLastName(request.getLastName());
-            user.setResume(request.getResume());
+            user.setEmail(email);
 
-            user.setStatus("Active");
+            user.setPhone(
+                    request.getPhone()
+            );
 
-        } else if ("CONTRACTOR".equalsIgnoreCase(request.getRole())) {
+            user.setPassword(
+                    passwordEncoder.encode(
+                            request.getPassword()
+                    )
+            );
 
-            user.setRole(Role.CONTRACTOR);
+            user.setRole(
+                    Role.APPLICANT
+            );
 
-            user.setCompanyName(request.getCompanyName());
-            user.setUsername(request.getUsername());
-            user.setAddress(request.getAddress());
-            user.setGst(request.getGst());
-            user.setCompanyLicense(request.getCompanyLicense());
+            user.setFirstName(
+                    request.getFirstName()
+            );
 
-            // Generate Contractor ID
-            long contractorCount =
-                    userRepository.count() + 1000;
+            user.setLastName(
+                    request.getLastName()
+            );
 
-            user.setContractorId("CTR" + contractorCount);
+            user.setResume(
+                    request.getResume()
+            );
 
-            user.setStatus("Active");
+            user.setStatus(
+                    "Active"
+            );
 
-        } else {
 
-            return "Invalid role";
+            // ----------------------------------------------------
+            // SAVE APPLICANT
+            // ----------------------------------------------------
+
+            userRepository.save(user);
+
+
+            // ----------------------------------------------------
+            // SEND APPLICANT REGISTRATION EMAIL
+            // ----------------------------------------------------
+
+            emailService.sendApplicantRegistrationEmail(
+                    user.getEmail()
+            );
+
+
+            // ----------------------------------------------------
+            // RETURN RESPONSE
+            // ----------------------------------------------------
+
+            return new RegisterResponse(
+                    "Registration successful",
+                    user.getContractorId()
+            );
         }
 
-        userRepository.save(user);
 
-        return "Registration successful";
+        // ========================================================
+        // INVALID ROLE
+        // ========================================================
+
+        else {
+
+            return new RegisterResponse(
+                    "Invalid role",
+                    null
+            );
+        }
     }
 
+
+    // ============================================================
+    // LOGIN
+    // ============================================================
 
     public LoginResponse loginUser(LoginRequest request) {
 
         User user = null;
+
+
+        // ========================================================
+        // APPLICANT LOGIN
+        // ========================================================
 
         if ("APPLICANT".equalsIgnoreCase(request.getRole())) {
 
@@ -97,75 +186,119 @@ public class UserService {
                     !request.getEmail().isBlank()) {
 
                 user = userRepository
-                        .findByEmail(request.getEmail())
+                        .findByEmail(
+                                request.getEmail()
+                        )
                         .orElse(null);
 
             } else if (request.getPhone() != null &&
                     !request.getPhone().isBlank()) {
 
                 user = userRepository
-                        .findByPhone(request.getPhone())
+                        .findByPhone(
+                                request.getPhone()
+                        )
                         .orElse(null);
             }
+        }
 
-        } else if ("CONTRACTOR".equalsIgnoreCase(request.getRole())) {
 
-            if (request.getContractorId() != null &&
-                    request.getUsername() != null) {
+        // ========================================================
+        // CONTRACTOR LOGIN
+        // ========================================================
+
+        else if ("CONTRACTOR".equalsIgnoreCase(request.getRole())) {
+
+            if (request.getEmail() != null &&
+                    !request.getEmail().isBlank()) {
 
                 user = userRepository
-                        .findByContractorId(request.getContractorId())
+                        .findByEmail(
+                                request.getEmail()
+                                        .trim()
+                                        .toLowerCase()
+                        )
                         .orElse(null);
-
-                if (user != null &&
-                        !user.getUsername().equals(request.getUsername())) {
-
-                    user = null;
-                }
-            }
-
-        } else if ("SUPER_ADMIN".equalsIgnoreCase(request.getRole())) {
-
-            if (request.getAdminId() != null) {
-
-                try {
-
-                    Long id = Long.parseLong(request.getAdminId());
-
-                    user = userRepository
-                            .findById(id)
-                            .orElse(null);
-
-                } catch (NumberFormatException e) {
-
-                    user = null;
-                }
             }
         }
+
+
+        // ========================================================
+        // SUPER ADMIN LOGIN
+        // ========================================================
+
+        else if ("SUPER_ADMIN".equalsIgnoreCase(request.getRole())) {
+
+            // ----------------------------------------------------
+            // SUPER ADMIN LOGIN USING FIXED EMAIL
+            // ----------------------------------------------------
+            // Database ID is NOT used.
+            // ----------------------------------------------------
+
+            if (request.getEmail() != null &&
+                    !request.getEmail().isBlank()) {
+
+                user = userRepository
+                        .findByEmail(
+                                request.getEmail()
+                        )
+                        .orElse(null);
+            }
+        }
+
+
+        // ========================================================
+        // USER NOT FOUND
+        // ========================================================
 
         if (user == null) {
-            throw new RuntimeException("Invalid credentials");
+
+            throw new RuntimeException(
+                    "Invalid credentials"
+            );
         }
+
+
+        // ========================================================
+        // PASSWORD CHECK
+        // ========================================================
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword())) {
 
-            throw new RuntimeException("Invalid credentials");
+            throw new RuntimeException(
+                    "Invalid credentials"
+            );
         }
+
+
+        // ========================================================
+        // BLOCKED ACCOUNT CHECK
+        // ========================================================
 
         if (user.getStatus() != null &&
-                user.getStatus().equalsIgnoreCase("Blocked")) {
+                user.getStatus()
+                        .equalsIgnoreCase("Blocked")) {
 
-            throw new RuntimeException("Account is blocked");
+            throw new RuntimeException(
+                    "Account is blocked"
+            );
         }
 
-        // Generate JWT token after successful login
-        String token = jwtService.generateToken(user.getEmail());
+
+        // ========================================================
+        // GENERATE JWT
+        // ========================================================
+
+        String token =
+                jwtService.generateToken(
+                        user.getEmail()
+                );
 
         return new LoginResponse(
                 token,
-                user.getId()
+                user
         );
     }
 }

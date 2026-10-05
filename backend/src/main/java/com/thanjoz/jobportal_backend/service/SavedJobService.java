@@ -6,6 +6,10 @@ import com.thanjoz.jobportal_backend.entity.User;
 import com.thanjoz.jobportal_backend.repository.JobRepository;
 import com.thanjoz.jobportal_backend.repository.SavedJobRepository;
 import com.thanjoz.jobportal_backend.repository.UserRepository;
+import com.thanjoz.jobportal_backend.exception.ResourceNotFoundException;
+import com.thanjoz.jobportal_backend.exception.AlreadySavedJobException;
+
+
 
 import org.springframework.stereotype.Service;
 
@@ -31,14 +35,14 @@ public class SavedJobService {
     public SavedJob saveJob(Long userId, Long jobId) {
 
         if (savedJobRepository.existsByUserIdAndJobId(userId, jobId)) {
-            throw new RuntimeException("Job already saved");
+            throw new AlreadySavedJobException("Job already saved");
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found"));
 
         SavedJob savedJob = new SavedJob();
         savedJob.setUser(user);
@@ -55,7 +59,7 @@ public class SavedJobService {
 
         SavedJob savedJob = savedJobRepository
                 .findByUserIdAndJobId(userId, jobId)
-                .orElseThrow(() -> new RuntimeException("Saved job not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Saved job not found"));
 
         savedJobRepository.delete(savedJob);
     }

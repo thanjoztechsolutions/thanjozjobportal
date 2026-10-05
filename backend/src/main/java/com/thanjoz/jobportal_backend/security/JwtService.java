@@ -19,7 +19,8 @@ public class JwtService {
 
     public JwtService(@Value("${jwt.secret}") String secret) {
         this.key = Keys.hmacShaKeyFor(
-                secret.getBytes(StandardCharsets.UTF_8)
+                secret.getBytes(StandardCharsets.UTF_8)//(string ah bites ah convert panna
+                                                        // UTF_8 intha word use pannrom)
         );
     }
 
@@ -31,7 +32,7 @@ public class JwtService {
                 .setExpiration(
                         new Date(System.currentTimeMillis() + expirationTime)
                 )
-                .signWith(key, SignatureAlgorithm.HS256)
+                .signWith(key, SignatureAlgorithm.HS256)//(JWT-ai sign/verify panna use pannura cryptographic algorithm))
                 .compact();
     }
 

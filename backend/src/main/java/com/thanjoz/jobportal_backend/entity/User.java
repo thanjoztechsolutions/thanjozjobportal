@@ -15,6 +15,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String contractorId;
 
     private String firstName;
@@ -30,6 +31,10 @@ public class User {
 
     @JsonIgnore
     private String password;
+
+    private String qualification;
+
+    private String experience;
 
     private String address;
 
@@ -49,4 +54,6 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+
 }

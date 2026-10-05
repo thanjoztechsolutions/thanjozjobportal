@@ -7,15 +7,15 @@ public class LoginRequest {
 
     private String role;
 
+    // Applicant login
     private String email;
-
     private String phone;
 
-    private String contractorId;
+    // Contractor login
+    // Contractor now logs in using email + password
 
-    private String username;
-
-    private String adminId;
+    // Super Admin login
+    // Uses email + password
 
     private String password;
 }

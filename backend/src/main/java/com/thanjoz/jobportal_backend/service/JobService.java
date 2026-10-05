@@ -1,16 +1,15 @@
 package com.thanjoz.jobportal_backend.service;
 
-import com.thanjoz.jobportal_backend.entity.Company;
 import com.thanjoz.jobportal_backend.entity.Job;
 import com.thanjoz.jobportal_backend.entity.User;
-import com.thanjoz.jobportal_backend.repository.CompanyRepository;
 import com.thanjoz.jobportal_backend.repository.JobRepository;
 import com.thanjoz.jobportal_backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import com.thanjoz.jobportal_backend.repository.JobCategoryRepository;
+import com.thanjoz.jobportal_backend.dto.UpdateJobRequest;
 
-import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 
 @Service
 public class JobService {
@@ -21,81 +20,200 @@ public class JobService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private CompanyRepository companyRepository;
 
-    @Autowired
-    private JobCategoryRepository jobCategoryRepository;
+    // ============================================================
+    // GET ALL JOBS - PAGINATED
+    // ============================================================
 
-    public List<Job> getAllJobs() {
-        return jobRepository.findAll();
+    public Page<Job> getAllJobs(Pageable pageable) {
+
+        return jobRepository.findAll(pageable);
     }
+
+
+    // ============================================================
+    // GET JOB BY ID
+    // ============================================================
 
     public Job getJobById(Long id) {
+
         return jobRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() ->
+                        new RuntimeException("Job not found"));
     }
 
-    public Job createJob(Job job) {
 
-        if (job.getCategoryId() != null) {
-            jobCategoryRepository.findById(job.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Job category not found"));
+    // ============================================================
+    // CREATE JOB USING CONTRACTOR ID
+    // ============================================================
+
+    public Job createJob(Job job, String contractorId) {
+
+        User contractor = userRepository
+                .findByContractorId(contractorId)
+                .orElseThrow(() ->
+                        new RuntimeException("Contractor not found"));
+
+
+        // Make sure the user is actually a contractor
+        if (contractor.getRole() == null ||
+                !contractor.getRole().name().equals("CONTRACTOR")) {
+
+            throw new RuntimeException(
+                    "Only contractors can post jobs");
         }
+
+
+        // SET CONTRACTOR ID AUTOMATICALLY
+        job.setContractorId(contractor.getContractorId());
+
 
         return jobRepository.save(job);
     }
 
-    public List<Job> searchJobs(String keyword) {
-        return jobRepository.findByTitleContainingIgnoreCase(keyword);
+
+    // ============================================================
+    // SEARCH JOBS - PAGINATED
+    // ============================================================
+
+    public Page<Job> searchJobs(
+            String keyword,
+            Pageable pageable) {
+
+        return jobRepository
+                .findByTitleContainingIgnoreCase(
+                        keyword,
+                        pageable
+                );
     }
 
-    public Job updateJob(Long id, Job updatedJob) {
 
-        Job existingJob = jobRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
 
-        existingJob.setTitle(updatedJob.getTitle());
-        existingJob.setDescription(updatedJob.getDescription());
-        existingJob.setCompany(updatedJob.getCompany());
-        existingJob.setLocation(updatedJob.getLocation());
-        existingJob.setSalary(updatedJob.getSalary());
-        existingJob.setType(updatedJob.getType());
-        existingJob.setExperience(updatedJob.getExperience());
-        existingJob.setCompanyId(updatedJob.getCompanyId());
-        if (updatedJob.getCategoryId() != null) {
-            jobCategoryRepository.findById(updatedJob.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Job category not found"));
+    // ============================================================
+// UPDATE JOB - PARTIAL UPDATE
+// ============================================================
+
+    public Job updateJob(
+            Long id,
+            UpdateJobRequest request) {
+
+        Job existingJob = jobRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Job not found"));
+
+        if (request.getTitle() != null) {
+            existingJob.setTitle(request.getTitle());
         }
-        existingJob.setCategoryId(updatedJob.getCategoryId());
+
+        if (request.getDescription() != null) {
+            existingJob.setDescription(
+                    request.getDescription());
+        }
+
+        if (request.getCompany() != null) {
+            existingJob.setCompany(
+                    request.getCompany());
+        }
+
+        if (request.getLocation() != null) {
+            existingJob.setLocation(
+                    request.getLocation());
+        }
+
+        if (request.getSalary() != null) {
+            existingJob.setSalary(
+                    request.getSalary());
+        }
+
+        if (request.getType() != null) {
+            existingJob.setType(
+                    request.getType());
+        }
+
+        if (request.getExperience() != null) {
+            existingJob.setExperience(
+                    request.getExperience());
+        }
+
+        if (request.getCategory() != null) {
+            existingJob.setCategory(
+                    request.getCategory());
+
+        }
+            if (request.getVacancies() != null) {
+                existingJob.setVacancies(request.getVacancies());
+
+        }
+        if (request.getRequiredSkill() != null) {
+            existingJob.setRequiredSkill(
+                    request.getRequiredSkill()
+            );
+        }
+
+        // contractorId is intentionally NOT updated
 
         return jobRepository.save(existingJob);
     }
 
+
+    // ============================================================
+    // DELETE JOB
+    // ============================================================
+
     public void deleteJob(Long id) {
 
-        Job job = jobRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+        Job job = jobRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Job not found"));
 
         jobRepository.delete(job);
     }
 
-    public List<Job> getJobsByCompany(Long companyId) {
-        return jobRepository.findByCompanyId(companyId);
+
+    // ============================================================
+    // GET JOBS BY CONTRACTOR - PAGINATED
+    // ============================================================
+
+    public Page<Job> getJobsByContractor(
+            String contractorId,
+            Pageable pageable) {
+
+        return jobRepository
+                .findByContractorId(
+                        contractorId,
+                        pageable
+                );
     }
 
-    public boolean isJobOwner(Long jobId, String email) {
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    // ============================================================
+    // CHECK WHETHER CONTRACTOR OWNS JOB
+    // ============================================================
 
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+    public boolean isJobOwner(
+            Long jobId,
+            String email) {
 
-        Company company = companyRepository.findById(job.getCompanyId())
-                .orElseThrow(() -> new RuntimeException("Company not found"));
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
 
-        return company.getOwner().getId().equals(user.getId());
+
+        Job job = jobRepository
+                .findById(jobId)
+                .orElseThrow(() ->
+                        new RuntimeException("Job not found"));
+
+
+        // Check whether the job belongs
+        // to this contractor
+
+        return job.getContractorId() != null
+                && user.getContractorId() != null
+                && job.getContractorId()
+                .equals(user.getContractorId());
     }
 }
-
